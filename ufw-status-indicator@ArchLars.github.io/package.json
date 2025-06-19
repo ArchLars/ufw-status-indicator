@@ -1,0 +1,53 @@
+{
+  "name": "UFW Status Indicator",
+  "version": "2.0.0",
+  "description": "GNOME Shell extension for UFW (Uncomplicated Firewall) status indication",
+  "keywords": [
+    "gnome",
+    "gnome-shell",
+    "extension",
+    "ufw",
+    "firewall",
+    "security"
+  ],
+  "author": "illitellyoulater",
+   "contributors": [
+    {
+      "name": "ArchLars",
+      "url": "https://github.com/ArchLars"
+    }
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/ArchLars/ufw-status-indicator",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ArchLars/ufw-status-indicator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ArchLars/ufw-status-indicator/issues"
+  },
+  "gnome": {
+    "shell-version": ["48"],
+    "uuid": "ufw-status-indicator@ArchLars.github.io"
+  },
+  "scripts": {
+    "pack": "gnome-extensions pack --force",
+    "install": "bash install.sh",
+    "enable": "gnome-extensions enable ufw-status-indicator@ArchLars.github.io",
+    "disable": "gnome-extensions disable ufw-status-indicator@ArchLars.github.io",
+    "logs": "journalctl -f -o cat /usr/bin/gnome-shell | grep -E 'ufw-status-indicator|UFW'",
+    "test-cron": "sudo sh -c \"LC_ALL=C LANGUAGE=C LANG=C ufw status | grep 'Status:'\"",
+    "lint": "eslint extension.js prefs.js"
+  },
+  "files": [
+    "extension.js",
+    "metadata.json",
+    "prefs.js",
+    "stylesheet.css",
+    "README.md",
+    "LICENSE"
+  ],
+  "devDependencies": {
+    "eslint": "^8.0.0"
+  }
+}
