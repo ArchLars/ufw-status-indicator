@@ -1,31 +1,35 @@
-'use strict';
-const { GObject, GLib, St, Gio, Clutter } = imports.gi;
-const Main = imports.ui.main;
-const PanelMenu = imports.ui.panelMenu;
-const PopupMenu = imports.ui.popupMenu;
+/**
+ * UFW Status Indicator for GNOME 48
+ * Forked by ArchLars from illtellyoulater
+ */
 
-// For compatibility checks, as described https://wiki.gnome.org/Attic/GnomeShell/Extensions/Writing
-// const Config = imports.misc.config;
-// const SHELL_MINOR = parseInt(Config.PACKAGE_VERSION.split('.')[1]);
+import GObject from 'gi://GObject';
+import GLib from 'gi://GLib';
+import St from 'gi://St';
+import Gio from 'gi://Gio';
+import Clutter from 'gi://Clutter';
 
-var ufwStatusIndicator;
+import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
+import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 const UfwStatusMenuItem = GObject.registerClass(
   class UfwStatusMenuItem extends PopupMenu.PopupBaseMenuItem {
     _init(iconName, toolTip) {
       super._init();
       this._icon = new St.Icon({ 
-        // St = Shell Toolkit
         x_expand: true, 
         icon_name: 'dialog-question-symbolic',
         style_class: 'system-status-icon',
+        y_align: Clutter.ActorAlign.CENTER
       });
-      this.actor.add_child(this._icon);
+      this.add_child(this._icon);
       this._label = new St.Label({ 
         x_expand: true, 
         y_align: Clutter.ActorAlign.CENTER 
       });
-      this.actor.add_child(this._label);	
+      this.add_child(this._label);	
     }
   }
 );
@@ -34,16 +38,19 @@ const UfwStatusIndicator = GObject.registerClass(
   class UfwStatusIndicator extends PanelMenu.Button {
     _init() {
       super._init(0.0, "UFW Status Indicator");
+      
       this._icon = new St.Icon({
         icon_name: 'security-low-symbolic',
         style_class: 'system-status-icon',
+        y_align: Clutter.ActorAlign.CENTER,
+        x_align: Clutter.ActorAlign.CENTER
       });
-      this.actor.add_child(this._icon);
+      this.add_child(this._icon);
+      
       this._menuItem = new UfwStatusMenuItem('security-low-symbolic', 'futureToolTip');
       this.menu.addMenuItem(this._menuItem);
       this._file = Gio.File.new_for_path('/var/log/ufw-status-indicator.ext.log');
       this._monitor = this._file.monitor_file(Gio.FileMonitorFlags.NONE, null);
-      // connects the monitor for changed files to this extension
       this._changedFileSignalId = this._monitor.connect('changed', this._refresh.bind(this));
       this._refresh();
     }    
@@ -52,22 +59,36 @@ const UfwStatusIndicator = GObject.registerClass(
       let ufwStatus = this._getUfwStatusFromFile();
       if (ufwStatus === 'Status: active') {
         this._icon.icon_name = 'security-high-symbolic';
-        this._icon.set_style('color: green');
+        this._icon.remove_style_class_name('ufw-status-icon-disabled');
+        this._icon.remove_style_class_name('ufw-status-icon-unknown');
+        this._icon.add_style_class_name('ufw-status-icon-enabled');
+        
         this._menuItem._icon.icon_name = 'security-high-symbolic';
-        this._menuItem._icon.set_style('color: green');
-        this._menuItem._label.set_text('UFW firewall enabled');
+        this._menuItem._icon.remove_style_class_name('ufw-status-icon-disabled');
+        this._menuItem._icon.remove_style_class_name('ufw-status-icon-unknown');
+        this._menuItem._icon.add_style_class_name('ufw-status-icon-enabled');
+        this._menuItem._label.set_text('UFW Firewall Enabled');
       } else if (ufwStatus === 'Status: inactive') {
         this._icon.icon_name = 'security-low-symbolic';
-        this._icon.set_style('color: red');
+        this._icon.remove_style_class_name('ufw-status-icon-enabled');
+        this._icon.remove_style_class_name('ufw-status-icon-unknown');
+        this._icon.add_style_class_name('ufw-status-icon-disabled');
+        
         this._menuItem._icon.icon_name = 'security-low-symbolic';
-        this._menuItem._icon.set_style('color: red');
-        this._menuItem._label.set_text('UFW firewall disabled');
+        this._menuItem._icon.remove_style_class_name('ufw-status-icon-enabled');
+        this._menuItem._icon.remove_style_class_name('ufw-status-icon-unknown');
+        this._menuItem._icon.add_style_class_name('ufw-status-icon-disabled');
+        this._menuItem._label.set_text('UFW Firewall Disabled');
       } else {
         this._icon.icon_name = 'security-low-symbolic';
-        this._icon.set_style('color: orange');
+        this._icon.remove_style_class_name('ufw-status-icon-enabled');
+        this._icon.remove_style_class_name('ufw-status-icon-disabled');
+        this._icon.add_style_class_name('ufw-status-icon-unknown');
+        
         this._menuItem._icon.icon_name = 'security-low-symbolic';
-        this._menuItem._icon.set_style('color: orange');
-        // Main.notify('UFW Firewall Indicator Setup', 'Click for more info! ');
+        this._menuItem._icon.remove_style_class_name('ufw-status-icon-enabled');
+        this._menuItem._icon.remove_style_class_name('ufw-status-icon-disabled');
+        this._menuItem._icon.add_style_class_name('ufw-status-icon-unknown');
         this._menuItem._label.set_text(
           '[ * Welcome to the UFW Indicator Setup! * ]\n'
           + '\n'
@@ -99,41 +120,38 @@ const UfwStatusIndicator = GObject.registerClass(
     _getUfwStatusFromFile() {
       try {
         let [res, out] = GLib.file_get_contents('/var/log/ufw-status-indicator.ext.log');
-        return imports.byteArray.toString(out).trim(); 
+        const decoder = new TextDecoder();
+        return decoder.decode(out).trim();
       } catch (e) {
-        log('Failed to read ufw-status-indicator.ext.log');
-        logError(e, 'ExtensionError');
+        console.error('Failed to read ufw-status-indicator.ext.log');
+        console.error(e);
         return(e)
       }			
     }
       
     _onDestroy() {
-      // Disconnect the 'changed' signal from the file monitor
       this._monitor.disconnect(this._changedFileSignalId);		
       super._onDestroy();
     }
   }
 );
+
+export default class UfwStatusIndicatorExtension extends Extension {
+    constructor(metadata) {
+        super(metadata);
+        this._logger = this.getLogger();
+        this._logger.debug(`constructing ${this.metadata.name}`);
+    }
+
+    enable() {
+        this._logger.debug(`${this.metadata.name}: enable() called`);
+        this._indicator = new UfwStatusIndicator();
+        Main.panel.addToStatusArea(this.uuid, this._indicator);
+    }
     
-    
-function init() {
-  if (!ufwStatusIndicator) {
-    log('UFW Status Indicator: init() called');
-  }
+    disable() {
+        this._logger.debug(`${this.metadata.name}: disable() called`);
+        this._indicator?.destroy();
+        this._indicator = null;
+    }
 }
-    
-function enable() {
-  log('UFW Status Indicator: enable() called');
-  if (ufwStatusIndicator === undefined) {
-    ufwStatusIndicator = new UfwStatusIndicator();
-    Main.panel.addToStatusArea('UFW Status Indicator', ufwStatusIndicator);
-  }
-}
-    
-function disable() {
-  log('UFW Status Indicator: disable() called');
-  ufwStatusIndicator.destroy();
-  log(ufwStatusIndicator);
-  ufwStatusIndicator = undefined;
-}
-    
