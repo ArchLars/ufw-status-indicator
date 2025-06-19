@@ -1,0 +1,39 @@
+/* UFW Status Indicator Custom Styles */
+
+.ufw-status-icon-enabled {
+    color: #73d216; /* Green */
+}
+
+.ufw-status-icon-disabled {
+    color: #cc0000; /* Red */
+}
+
+.ufw-status-icon-unknown {
+    color: #f57900; /* Orange */
+}
+
+.system-status-icon.ufw-status-icon-enabled,
+.system-status-icon.ufw-status-icon-disabled,
+.system-status-icon.ufw-status-icon-unknown {
+    margin: 0;
+    -st-icon-style: symbolic;
+}
+
+/* Menu item styles */
+.ufw-status-menu-item {
+    font-weight: bold;
+}
+
+.ufw-status-menu-label {
+    padding-left: 12px;
+}
+
+/* Setup instructions in menu */
+.ufw-setup-instructions {
+    font-family: monospace;
+    font-size: 0.9em;
+    padding: 12px;
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 6px;
+    margin: 8px;
+}
